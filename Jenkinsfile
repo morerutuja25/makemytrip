@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'teamA-js' }
+    agent any
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '3', artifactNumToKeepStr: '3'))
