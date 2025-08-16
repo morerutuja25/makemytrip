@@ -1,0 +1,145 @@
+warning: in the working copy of 'pom.xml', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/Dockerfile b/Dockerfile[m
+[1mindex e69de29..78dcf7a 100644[m
+[1m--- a/Dockerfile[m
+[1m+++ b/Dockerfile[m
+[36m@@ -0,0 +1,23 @@[m
+[32m+[m[32m# Use official Tomcat 9 with Java 21 pre-installed[m
+[32m+[m[32mFROM tomcat:9.0.82 -jdk21-temurin[m
+[32m+[m
+[32m+[m[32m# Set malitainer Label (optionat but good practice)[m
+[32m+[m[32mLABEL maintainer="your.ema1l@example.com"[m
+[32m+[m
+[32m+[m[32m# Remove default ROOT app (optional, keeps container clean)[m
+[32m+[m[32mRUN rm -rf /usr/Local/tomcat/webapps/R00T[m
+[32m+[m
+[32m+[m[32m# Create a user for running the application[m
+[32m+[m[32mRUN useradd -m makemytrip[m
+[32m+[m
+[32m+[m[32m# Copy your JAR file into the webapps directory[m
+[32m+[m[32mCOPY •/target/makemytrip*.jar /usr/local/tomcat/webapps/[m
+[32m+[m
+[32m+[m[32m# Expose the default Tomcat port[m
+[32m+[m[32mEXPOSE 8080[m
+[32m+[m
+[32m+[m[32m# Set the user to 'makemytrip' for security[m
+[32m+[m[32mUSER makemytrip[m
+[32m+[m
+[32m+[m[32m# Default command to run Tomcat[m
+[32m+[m[32mCMD ["catalina.sh","run"][m
+\ No newline at end of file[m
+[1mdiff --git a/Jenkinsfile b/Jenkinsfile[m
+[1mindex a82d82f..949973a 100644[m
+[1m--- a/Jenkinsfile[m
+[1m+++ b/Jenkinsfile[m
+[36m@@ -1,10 +1,9 @@[m
+ pipeline {[m
+[31m-[m
+[31m-    agent {label 'teamA-js'}[m
+[32m+[m[32m    agent { label 'teamA-js' }[m
+ [m
+     options {[m
+         buildDiscarder(logRotator(numToKeepStr: '3', artifactNumToKeepStr: '3'))[m
+[31m-        // keep last 3 logs, other will delete [m
+[32m+[m[32m        // keep last 3 logs, others will be deleted[m
+     }[m
+ [m
+     tools {[m
+[36m@@ -23,7 +22,6 @@[m [mpipeline {[m
+         stage('Code QA Execution') {[m
+             steps {[m
+                 echo 'Running JUnit Test Cases.'[m
+[31m-[m
+                 sh 'mvn clean test'[m
+                 echo 'JUnit Test Cases Completed Successfully!!!'[m
+             }[m
+[36m@@ -36,6 +34,74 @@[m [mpipeline {[m
+                 echo 'WAR Artifact Created Successfully!'[m
+             }[m
+         }[m
+[32m+[m
+[32m+[m[32m        stage('Build & Tag Docker Image') {[m
+[32m+[m[32m            steps {[m
+[32m+[m[32m                echo 'Building Docker Image with Tags...'[m
+[32m+[m[32m                sh "docker build -t satyam88/booking-ms:latest -t booking-ms:latest ."[m
+[32m+[m[32m                echo 'Docker Image Build Completed!'[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        stage('Docker Image Scanning') {[m
+[32m+[m[32m            steps {[m
+[32m+[m[32m                echo 'Scanning Docker Image with Trivy...'[m
+[32m+[m[32m                sh 'trivy image ${DOCKER_IMAGE}:latest || echo "Scan Failed - Proceeding with Caution"'[m
+[32m+[m[32m                echo 'Docker Image Scanning Completed!'[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        stage('Push Docker Image to Docker Hub') {[m
+[32m+[m[32m            steps {[m
+[32m+[m[32m                script {[m
+[32m+[m[32m                    withCredentials([string(credentialsId: 'dockerhubCred', variable: 'dockerhubCred')]) {[m
+[32m+[m[32m                        sh 'docker login docker.io -u satyam88 -p ${dockerhubCred}'[m
+[32m+[m[32m                        echo 'Pushing Docker Image to Docker Hub...'[m
+[32m+[m[32m                        sh 'docker push satyam88/booking-ms:latest'[m
+[32m+[m[32m                        echo 'Docker Image Pushed to Docker Hub Successfully!'[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        stage('Push Docker Image to Amazon ECR') {[m
+[32m+[m[32m            steps {[m
+[32m+[m[32m                script {[m
+[32m+[m[32m                    withDockerRegistry([credentialsId: 'ecr:ap-south-1:ecr-credentials', url: "https://533267238276.dkr.ecr.ap-south-1.amazonaws.com"]) {[m
+[32m+[m[32m                        echo 'Tagging and Pushing Docker Image to ECR...'[m
+[32m+[m[32m                        sh '''[m
+[32m+[m[32m                            docker images[m
+[32m+[m[32m                            docker tag booking-ms:latest 533267238276.dkr.ecr.ap-south-1.amazonaws.com/booking-ms:latest[m
+[32m+[m[32m                            docker push 533267238276.dkr.ecr.ap-south-1.amazonaws.com/booking-ms:latest[m
+[32m+[m[32m                        '''[m
+[32m+[m[32m                        echo 'Docker Image Pushed to Amazon ECR Successfully!'[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        stage('Upload Docker Image to Nexus') {[m
+[32m+[m[32m            steps {[m
+[32m+[m[32m                script {[m
+[32m+[m[32m                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {[m
+[32m+[m[32m                        sh 'docker login http://43.205.196.227:8085/repository/booking-ms/ -u admin -p ${PASSWORD}'[m
+[32m+[m[32m                        echo "Push Docker Image to Nexus : In Progress"[m
+[32m+[m[32m                        sh 'docker tag booking-ms 43.205.196.227:8085/booking-ms:latest'[m
+[32m+[m[32m                        sh 'docker push 43.205.196.227:8085/booking-ms'[m
+[32m+[m[32m                        echo "Push Docker Image to Nexus : Completed"[m
+[32m+[m[32m                    }[m
+[32m+[m[32m                }[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        stage('Cleanup Docker Images') {[m
+[32m+[m[32m            steps {[m
+[32m+[m[32m                echo 'Cleaning up local Docker images...'[m
+[32m+[m[32m                sh "docker rmi -f ${DOCKER_IMAGE}:latest || true"[m
+[32m+[m[32m                sh "docker rmi -f ${ECR_REPO}:latest || true"[m
+[32m+[m[32m                echo 'Local Docker images deleted successfully!'[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+     }[m
+ [m
+     post {[m
+[1mdiff --git a/pom.xml b/pom.xml[m
+[1mindex 1cb237d..d8d1122 100644[m
+[1m--- a/pom.xml[m
+[1m+++ b/pom.xml[m
+[36m@@ -10,8 +10,9 @@[m
+ 	</parent>[m
+ 	<groupId>com.example</groupId>[m
+ 	<artifactId>makemytrip</artifactId>[m
+[31m-	<version>0.0.1-SNAPSHOT</version>[m
+[32m+[m	[32m<version>1.1</version>[m
+ 	<name>makemytrip</name>[m
+[32m+[m	[32m<packaging>jar</packaging>[m
+ 	<description>Demo project for Spring Boot</description>[m
+ 	<url/>[m
+ 	<licenses>[m
