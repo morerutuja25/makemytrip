@@ -38,7 +38,7 @@ pipeline {
         stage('Build & Tag Docker Image') {
             steps {
                 echo 'Building Docker Image with Tags...'
-                sh "docker build -t rutujam25/makemytrip-ms:latest -t makemytrip-ms:latest ."
+                sh "docker build -t rutujam25/makemytrip:latest -t makemytrip:latest ."
                 echo 'Docker Image Build Completed!'
             }
         }
@@ -57,7 +57,7 @@ pipeline {
                     withCredentials([string(credentialsId: 'dockerhubCred', variable: 'dockerhubCred')]) {
                         sh 'docker login docker.io -u satyam88 -p ${dockerhubCred}'
                         echo 'Pushing Docker Image to Docker Hub...'
-                        sh 'docker push rutujam25/makemytrip-ms:latest'
+                        sh 'docker push rutujam25/makemytrip:latest'
                         echo 'Docker Image Pushed to Docker Hub Successfully!'
                     }
                 }
@@ -71,8 +71,8 @@ pipeline {
                         echo 'Tagging and Pushing Docker Image to ECR...'
                         sh '''
                             docker images
-                            docker tag makemytrip-ms:latest 533267238276.dkr.ecr.ap-south-1.amazonaws.com/makemytrip-ms:latest
-                            docker push 533267238276.dkr.ecr.ap-south-1.amazonaws.com/makemytrip-ms:latest
+                            docker tag makemytrip:latest 533267238276.dkr.ecr.ap-south-1.amazonaws.com/makemytrip:latest
+                            docker push 533267238276.dkr.ecr.ap-south-1.amazonaws.com/makemytrip:latest
                         '''
                         echo 'Docker Image Pushed to Amazon ECR Successfully!'
                     }
@@ -84,10 +84,10 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                        sh 'docker login http://43.205.196.227:8085/repository/makemytrip-ms/ -u admin -p ${PASSWORD}'
+                        sh 'docker login http://43.205.196.227:8085/repository/makemytrip/ -u admin -p ${PASSWORD}'
                         echo "Push Docker Image to Nexus : In Progress"
-                        sh 'docker tag makemytrip-ms 43.205.196.227:8085/makemytrip-ms:latest'
-                        sh 'docker push 43.205.196.227:8085/makemytrip-ms'
+                        sh 'docker tag makemytrip 43.205.196.227:8085/makemytrip:latest'
+                        sh 'docker push 43.205.196.227:8085/makemytrip'
                         echo "Push Docker Image to Nexus : Completed"
                     }
                 }
