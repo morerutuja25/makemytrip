@@ -11,7 +11,7 @@ RUN rm -rf /usr/Local/tomcat/webapps/R00T
 RUN useradd -m makemytrip
 
 # Copy your JAR file into the webapps directory
-COPY •/target/makemytrip*.jar /usr/local/tomcat/webapps/
+COPY ./target/makemytrip*.jar /usr/local/tomcat/webapps/
 
 # Expose the default Tomcat port
 EXPOSE 8080
