@@ -19,5 +19,5 @@ EXPOSE 8080
 # Set the user to 'makemytrip' for security
 USER makemytrip
 
-# Default command to run Tomcat
+# Default command to run Tomcats
 CMD ["catalina.sh","run"]
