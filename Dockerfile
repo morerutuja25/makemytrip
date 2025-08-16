@@ -1,5 +1,5 @@
 # Use official Tomcat 9 with Java 21 pre-installed
-FROM tomcat:9.0.82 -jdk21-temurin
+FROM tomcat:9.0.82-jdk21-temurin
 
 # Set malitainer Label (optionat but good practice)
 LABEL maintainer="your.ema1l@example.com"
