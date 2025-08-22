@@ -96,10 +96,14 @@ pipeline {
 
         stage('Cleanup Docker Images') {
             steps {
-                echo 'Cleaning up local Docker images...'
-                sh "docker rmi -f ${DOCKER_IMAGE}:latest || true"
-                sh "docker rmi -f ${ECR_REPO}:latest || true"
-                echo 'Local Docker images deleted successfully!'
+               echo 'Cleaning Up Local Docker Images...'
+                    sh '''
+                        docker rmi rutujam25/makemytrip:latest || echo "Image not found or already deleted"
+                        docker rmi makemytrip:latest || echo "Image not found or already deleted"
+                        docker rmi 093427473696.dkr.ecr.ap-south-1.amazonaws.com/makemytrip:latest || echo "Image not found or already deleted"
+                        docker image prune -f
+                    '''
+                    echo 'Local Docker Images Cleaned Up Successfully!'
             }
         }
     }
