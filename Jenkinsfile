@@ -1,10 +1,9 @@
 pipeline {
-
-    agent {label 'teamA-js'}
+    agent any
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '3', artifactNumToKeepStr: '3'))
-        // keep last 3 logs, other will delete 
+        // keep last 3 logs, others will be deleted
     }
 
     tools {
@@ -23,7 +22,6 @@ pipeline {
         stage('Code QA Execution') {
             steps {
                 echo 'Running JUnit Test Cases.'
-
                 sh 'mvn clean test'
                 echo 'JUnit Test Cases Completed Successfully!!!'
             }
@@ -34,6 +32,74 @@ pipeline {
                 echo 'Creating WAR Artifact...'
                 sh 'mvn package'
                 echo 'WAR Artifact Created Successfully!'
+            }
+        }
+
+        stage('Build & Tag Docker Image') {
+            steps {
+                echo 'Building Docker Image with Tags...'
+                sh "docker build -t rutujam25/makemytrip:latest -t makemytrip:latest ."
+                echo 'Docker Image Build Completed!'
+            }
+        }
+
+        stage('Docker Image Scanning') {
+            steps {
+                echo 'Scanning Docker Image with Trivy...'
+                sh 'trivy image ${DOCKER_IMAGE}:latest || echo "Scan Failed - Proceeding with Caution"'
+                echo 'Docker Image Scanning Completed!'
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'dockerhubCred', variable: 'dockerhubCred')]) {
+                        sh 'docker login docker.io -u rutujam25 -p ${dockerhubCred}'
+                        echo 'Pushing Docker Image to Docker Hub...'
+                        sh 'docker push rutujam25/makemytrip:latest'
+                        echo 'Docker Image Pushed to Docker Hub Successfully!'
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker Image to Amazon ECR') {
+            steps {
+                script {
+                    withDockerRegistry([credentialsId: 'ecr:ap-south-1:ecr-credentials', url: "https://533267238276.dkr.ecr.ap-south-1.amazonaws.com"]) {
+                        echo 'Tagging and Pushing Docker Image to ECR...'
+                        sh '''
+                            docker images
+                            docker tag makemytrip:latest 533267238276.dkr.ecr.ap-south-1.amazonaws.com/makemytrip:latest
+                            docker push 533267238276.dkr.ecr.ap-south-1.amazonaws.com/makemytrip:latest
+                        '''
+                        echo 'Docker Image Pushed to Amazon ECR Successfully!'
+                    }
+                }
+            }
+        }
+
+        stage('Upload Docker Image to Nexus') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh 'docker login http://43.205.196.227:8085/repository/makemytrip/ -u admin -p ${PASSWORD}'
+                        echo "Push Docker Image to Nexus : In Progress"
+                        sh 'docker tag makemytrip 43.205.196.227:8085/makemytrip:latest'
+                        sh 'docker push 43.205.196.227:8085/makemytrip'
+                        echo "Push Docker Image to Nexus : Completed"
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup Docker Images') {
+            steps {
+                echo 'Cleaning up local Docker images...'
+                sh "docker rmi -f ${DOCKER_IMAGE}:latest || true"
+                sh "docker rmi -f ${ECR_REPO}:latest || true"
+                echo 'Local Docker images deleted successfully!'
             }
         }
     }
