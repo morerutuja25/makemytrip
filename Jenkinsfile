@@ -80,19 +80,19 @@ pipeline {
             }
         }
 
-        //stage('Upload Docker Image to Nexus') {
-           // steps {
-                //script {
-                   // withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
-                     //   sh 'docker login http://43.205.196.227:8085/repository/makemytrip/ -u admin -p ${PASSWORD}'
-                     //   echo "Push Docker Image to Nexus : In Progress"
-                       // sh 'docker tag makemytrip 43.205.196.227:8085/makemytrip:latest'
-                     //   sh 'docker push 43.205.196.227:8085/makemytrip'
-                      //  echo "Push Docker Image to Nexus : Completed"
-                    //}
-                //}
-            //}
-        //}
+        stage('Upload Docker Image to Nexus') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'nexus-credentials', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                       sh 'docker login http://15.207.107.211:8085/repository/makemytrip/ -u admin -p ${PASSWORD}'
+                        echo "Push Docker Image to Nexus : In Progress"
+                        sh 'docker tag makemytrip 15.207.107.211:8085/makemytrip:latest'
+                        sh 'docker push 15.207.107.211:8085/makemytrip'
+                        echo "Push Docker Image to Nexus : Completed"
+                    }
+                }
+            }
+        }
 
         stage('Cleanup Docker Images') {
             steps {
